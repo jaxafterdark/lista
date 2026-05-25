@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Reservas</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:#fff;color:#111;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;font-size:14px}
+
+.top{padding:12px 14px 8px;border-bottom:1px solid #ddd}
+.top-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:6px}
+.top h1{font-size:17px;font-weight:600;flex:1}
+.btn-tel{font-family:inherit;font-size:12px;font-weight:500;color:#555;background:#f0f0f0;border:1px solid #ddd;border-radius:8px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+.btn-tel.active{color:#007aff;background:#e8f0ff;border-color:#aac4ff}
+.btn-reset{font-family:inherit;font-size:12px;font-weight:500;color:#c00;background:#fff0f0;border:1px solid #f0c0c0;border-radius:8px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+.date-row{display:flex;align-items:center;gap:8px}
+.date-row label{font-size:13px;color:#666;white-space:nowrap}
+.date-row select{font-family:inherit;font-size:14px;font-weight:500;color:#111;background:#fff;border:1px solid #ccc;border-radius:8px;padding:5px 8px;flex:1;outline:none}
+
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+thead th{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.04em;padding:8px 4px 6px;text-align:left;border-bottom:1.5px solid #ccc}
+th.c-num{width:34px;text-align:center}
+th.c-name{width:auto}
+th.c-tel{width:34%}
+th.c-mes{width:34%}
+
+tbody tr{border-bottom:1px solid #ebebeb}
+td{padding:0;vertical-align:middle}
+td.c-num{text-align:center;font-size:13px;font-weight:500;color:#999}
+
+.cell-wrap{display:flex;align-items:center;border-left:1px solid #ebebeb}
+td.c-name .cell-wrap{border-left:none}
+.cell-wrap input{flex:1;background:transparent;border:none;outline:none;font-family:inherit;font-size:13px;color:#111;padding:7px 0 7px 6px;min-width:0}
+.cell-wrap input::placeholder{color:#bbb}
+.cell-wrap input:focus{background:#f5f8ff}
+.btn-x{flex-shrink:0;background:transparent;border:none;color:#ccc;font-size:14px;padding:7px 7px;cursor:pointer;line-height:1;margin-right:4px}
+.btn-x:active{color:#c00}
+
+.mes-wrap{display:flex;align-items:center;border-left:1px solid #ebebeb}
+.mes-wrap select{flex:1;background:transparent;border:none;outline:none;font-family:inherit;font-size:13px;color:#111;padding:7px 0 7px 6px;-webkit-appearance:none;appearance:none;cursor:pointer;min-width:0}
+.mes-wrap select.empty{color:#bbb}
+.mes-wrap .btn-x{margin-right:4px}
+
+/* hide/show tel column */
+.hide-tel th.c-tel,
+.hide-tel td.c-tel{display:none}
+.hide-tel th.c-mes{width:40%}
+.hide-tel th.c-name{width:auto}
+
+.footer{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;padding:7px 14px 20px;display:flex;align-items:center;justify-content:space-between}
+.status{font-size:12px;color:#aaa}
+.status.saved{color:#2a7a4b}
+.badge{font-size:12px;font-weight:600;color:#888;background:#f5f5f5;border:1px solid #e0e0e0;padding:3px 10px;border-radius:20px}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:flex-end;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:14px 14px 0 0;padding:20px 18px 30px;width:100%;max-width:480px}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:6px}
+.modal p{font-size:13px;color:#666;margin-bottom:18px;line-height:1.5}
+.modal-btns{display:flex;gap:10px}
+.btn-cancel{flex:1;background:#f5f5f5;border:1px solid #ddd;color:#111;font-family:inherit;font-size:15px;font-weight:500;padding:12px;border-radius:10px;cursor:pointer}
+.btn-confirm{flex:1;background:#fff0f0;border:1px solid #f0b0b0;color:#c00;font-family:inherit;font-size:15px;font-weight:600;padding:12px;border-radius:10px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="top-row">
+    <h1>Reservas</h1>
+    <button class="btn-tel" id="btnTel" onclick="toggleTel()">📞 Teléfono</button>
+    <button class="btn-reset" onclick="confirmReset()">Reiniciar</button>
+  </div>
+  <div class="date-row">
+    <label>Sábado:</label>
+    <select id="dateSelect" onchange="onDateChange()"></select>
+  </div>
+</div>
+
+<div style="padding-bottom:60px">
+<table id="table">
+  <thead>
+    <tr>
+      <th class="c-num">Mesa</th>
+      <th class="c-name">Nombre</th>
+      <th class="c-tel">Teléfono</th>
+      <th class="c-mes">Mesera</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+</div>
+
+<div class="footer">
+  <span class="status" id="status">Listo</span>
+  <span class="badge" id="count">0 / 17</span>
+</div>
+
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h2>¿Reiniciar reservas?</h2>
+    <p>Se borrarán todas las reservas del sábado seleccionado.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="doReset()">Sí, reiniciar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ROWS=17,START=2,KEY='jad_v8';
+const MESERAS=['','Viviana','Nicole','Lourys','Kathy','M.Laura','Darlyng','Valentina'];
+const MESERAS_FULL=['','Viviana','Nicole','Lourys','Kathy','Maria Laura','Darlyng','Valentina'];
+let allData={},currentDate='',timer,telVisible=false;
+
+function getSaturdays(){
+  const sats=[],d=new Date();
+  d.setHours(0,0,0,0);
+  const diff=(6-d.getDay()+7)%7;
+  d.setDate(d.getDate()+(diff===0?0:diff));
+  for(let i=0;i<16;i++){const c=new Date(d);c.setDate(d.getDate()+i*7);sats.push(c);}
+  return sats;
+}
+function fmtKey(d){return d.toISOString().slice(0,10)}
+function fmtLabel(d){return d.toLocaleDateString('es-US',{weekday:'short',day:'numeric',month:'short'})}
+function loadAll(){try{const r=localStorage.getItem(KEY);if(r)allData=JSON.parse(r);}catch(e){}}
+function saveAll(){
+  try{localStorage.setItem(KEY,JSON.stringify(allData));}catch(e){}
+  const s=document.getElementById('status');
+  s.textContent='Guardado ✓ '+new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+  s.className='status saved';
+  updateCount();
+}
+function getRows(k){
+  if(!allData[k])allData[k]=[];
+  while(allData[k].length<ROWS)allData[k].push({n:'',t:'',m:''});
+  allData[k]=allData[k].slice(0,ROWS);
+  return allData[k];
+}
+function updateCount(){
+  const rows=allData[currentDate]||[];
+  const f=rows.filter(r=>r.n.trim()||r.t.trim()||r.m.trim()).length;
+  document.getElementById('count').textContent=f+' / '+ROWS;
+}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+function meseraOpts(sel){
+  return MESERAS.map((m,idx)=>'<option value="'+esc(MESERAS_FULL[idx])+'"'+(MESERAS_FULL[idx]===sel?' selected':'')+'>'+esc(m||'Escoger...')+'</option>').join('');
+}
+
+function toggleTel(){
+  telVisible=!telVisible;
+  document.getElementById('table').classList.toggle('hide-tel',!telVisible);
+  const btn=document.getElementById('btnTel');
+  btn.classList.toggle('active',telVisible);
+  btn.textContent=telVisible?'📞 Ocultar':'📞 Teléfono';
+}
+
+function render(){
+  if(!currentDate)return;
+  const rows=getRows(currentDate);
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+  rows.forEach((row,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td class="c-num">'+(START+i)+'</td>'+
+      '<td class="c-name"><div class="cell-wrap">'+
+        '<input type="text" inputmode="text" autocomplete="off" autocorrect="off" spellcheck="false" value="'+esc(row.n)+'" placeholder="Nombre..." data-i="'+i+'" data-f="n">'+
+        '<button class="btn-x" onclick="clearField('+i+',\'n\')">✕</button>'+
+      '</div></td>'+
+      '<td class="c-tel"><div class="cell-wrap">'+
+        '<input type="tel" inputmode="tel" autocomplete="off" value="'+esc(row.t)+'" placeholder="Teléfono..." data-i="'+i+'" data-f="t">'+
+        '<button class="btn-x" onclick="clearField('+i+',\'t\')">✕</button>'+
+      '</div></td>'+
+      '<td class="c-mes"><div class="mes-wrap">'+
+        '<select class="mes-sel'+(row.m?'':' empty')+'" data-i="'+i+'">'+meseraOpts(row.m)+'</select>'+
+        '<button class="btn-x" onclick="clearField('+i+',\'m\')">✕</button>'+
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',onInput));
+  tbody.querySelectorAll('select.mes-sel').forEach(sel=>sel.addEventListener('change',onSel));
+  updateCount();
+}
+function onInput(e){
+  const i=+e.target.dataset.i,f=e.target.dataset.f;
+  allData[currentDate][i][f]=e.target.value;
+  document.getElementById('status').textContent='Guardando...';
+  document.getElementById('status').className='status';
+  clearTimeout(timer);timer=setTimeout(saveAll,700);
+}
+function onSel(e){
+  const i=+e.target.dataset.i;
+  allData[currentDate][i].m=e.target.value;
+  e.target.classList.toggle('empty',!e.target.value);
+  document.getElementById('status').textContent='Guardando...';
+  document.getElementById('status').className='status';
+  clearTimeout(timer);timer=setTimeout(saveAll,700);
+}
+function clearField(i,f){
+  allData[currentDate][i][f]='';
+  render();saveAll();
+}
+function onDateChange(){
+  currentDate=document.getElementById('dateSelect').value;
+  render();
+  document.getElementById('status').textContent='Listo';
+  document.getElementById('status').className='status';
+}
+function confirmReset(){document.getElementById('modal').classList.add('show')}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+function doReset(){
+  allData[currentDate]=Array.from({length:ROWS},()=>({n:'',t:'',m:''}));
+  closeModal();render();saveAll();
+}
+function init(){
+  loadAll();
+  const sats=getSaturdays();
+  const sel=document.getElementById('dateSelect');
+  sats.forEach(d=>{
+    const o=document.createElement('option');
+    o.value=fmtKey(d);o.textContent=fmtLabel(d);
+    sel.appendChild(o);
+  });
+  currentDate=fmtKey(sats[0]);
+  sel.value=currentDate;
+  // start with tel hidden
+  document.getElementById('table').classList.add('hide-tel');
+  render();
+}
+init();
+</script>
+</body>
+</html>
